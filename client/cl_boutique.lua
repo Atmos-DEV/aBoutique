@@ -253,3 +253,8 @@ function givecarboutique(veh, coin, price)
         isMenuOpened = false
 	end)
 end 
+
+TriggerEvent('chat:addSuggestion', '/givecoin', 'Donner des coins', {
+    { name="Id", help="ID du joueur" },
+    { name="Coins", help="Nombre de coins" }
+})
