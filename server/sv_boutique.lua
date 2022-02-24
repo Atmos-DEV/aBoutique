@@ -11,8 +11,33 @@ ESX.RegisterServerCallback("aBoutique:verifcoin", function(source, cb)
 	end)
 end)
 
-TriggerEvent('es:addGroupCommand', 'givecoin', 'superadmin', function(source, args, user)
-	if tonumber(args[1]) and tonumber(args[2]) then
+RegisterCommand("givecoin", function(source, args, user)
+	if source ~= 0 then
+		local xPlayer = ESX.GetPlayerFromId(source)
+		local group = xPlayer.getGroup()
+		if group == "superadmin" then
+			if tonumber(args[1]) and tonumber(args[2]) then
+				local xPlayer = ESX.GetPlayerFromId(args[1])
+				if xPlayer then
+					MySQL.Async.fetchScalar('SELECT coin FROM users WHERE identifier = @identifier', { ['@identifier'] = xPlayer.identifier }, function(result)
+						local finalcoin = result + args[2]
+						MySQL.Sync.execute('UPDATE users SET coin = @coin WHERE identifier = @identifier', {
+							['@identifier'] = xPlayer.identifier,   
+							['@coin'] = finalcoin,   
+						})
+					end)
+					TriggerClientEvent('esx:showNotification', source, "Vous venez de donner ~g~"..ESX.Math.GroupDigits(args[2]).." Coins ~s~à l'id : ~b~"..args[1].."~s~ !")
+					TriggerClientEvent('esx:showNotification', args[1], "Vous venez de recevoir ~g~"..ESX.Math.GroupDigits(args[2]).." Coins ~s~d'un staff !")
+				else
+					TriggerClientEvent('esx:showNotification', source, "~r~Problème~s~ : Le joueur n'est pas en ligne !")
+				end
+			else
+				TriggerClientEvent('esx:showNotification', source, "~r~Problème~s~ : Une erreur dans le commande !")
+			end
+		else
+			TriggerClientEvent('esx:showNotification', source, "~r~Problème~s~ : Permission insuffisantes !")
+		end
+	else
 		local xPlayer = ESX.GetPlayerFromId(args[1])
 		if xPlayer then
 			MySQL.Async.fetchScalar('SELECT coin FROM users WHERE identifier = @identifier', { ['@identifier'] = xPlayer.identifier }, function(result)
@@ -21,18 +46,11 @@ TriggerEvent('es:addGroupCommand', 'givecoin', 'superadmin', function(source, ar
 					['@identifier'] = xPlayer.identifier,   
 					['@coin'] = finalcoin,   
 				})
+				TriggerClientEvent('esx:showNotification', args[1], "Livraison de votre ~g~achat~s~ !")
 			end)
-			TriggerClientEvent('esx:showNotification', source, "Vous venez de donner ~g~"..ESX.Math.GroupDigits(args[2]).." Coins ~s~à l'id : ~b~"..args[1].."~s~ !")
-			TriggerClientEvent('esx:showNotification', args[1], "Vous venez de recevoir ~g~"..ESX.Math.GroupDigits(args[2]).." Coins ~s~d'un staff !")
-		else
-			TriggerClientEvent('esx:showNotification', source, "~r~Problème~s~ : Le joueur n'est pas en ligne !")
 		end
-	else
-		TriggerClientEvent('esx:showNotification', source, "~r~Problème~s~ : Une erreur dans le commande !")
 	end
-end, function(source, args, user)
-	TriggerClientEvent('esx:showNotification', source, "~r~Problème~s~ : Permission insuffisantes !")
-end, {help = 'Donner des coins', params = {{name = "Id", help = 'ID du joueur'}, {name = "Coins", help = 'Nombre de coins'}}})
+end)
 
 RegisterServerEvent('aBoutique:achateffectue')
 AddEventHandler('aBoutique:achateffectue', function(vehicleProps, plate, coin, price)
